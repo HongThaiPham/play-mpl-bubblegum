@@ -1,0 +1,27 @@
+[package]
+name = "play-mpl-bubblegum"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "play_mpl_bubblegum"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+# idl-build = ["anchor-lang/idl-build"]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+
+[dependencies]
+bytemuck = { version = "1.20.0", features = ["min_const_generics"] }
+anchor-lang = { version = "0.31.1", features = [
+  "init-if-needed",
+  # "lazy-account",
+] }
+anchor-spl = { version = "0.31.1" }
