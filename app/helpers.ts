@@ -77,8 +77,8 @@ export async function getConfig() {
     "https://raw.githubusercontent.com/HongThaiPham/summer-bootcamp-anchor-token2022-stake/main/app/assets/token-info.json";
 
   const collectionMetadata = {
-    name: "Carbon NFT Collection",
-    symbol: "CCNFT",
+    name: "NFT Collection",
+    symbol: "NCT",
     uri: tokenUri,
   };
 

@@ -25,3 +25,4 @@ anchor-lang = { version = "0.31.1", features = [
   # "lazy-account",
 ] }
 anchor-spl = { version = "0.31.1" }
+spl-type-length-value = "0.7.0"

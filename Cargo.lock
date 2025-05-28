@@ -1010,6 +1010,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "bytemuck",
+ "spl-type-length-value",
 ]
 
 [[package]]

@@ -15,6 +15,7 @@ describe("play-mpl-bubblegum", () => {
   const maxDepth = 3;
   const maxBufferSize = 8;
   const merkleTree = web3.Keypair.generate();
+  const collectionMint = web3.Keypair.generate();
 
   it("init merkle tree", async () => {
     const merkleTreeSize = getMerkleTreeSize(maxDepth, maxBufferSize);
@@ -48,6 +49,17 @@ describe("play-mpl-bubblegum", () => {
       .accounts({
         merkleTree: merkleTree.publicKey,
       })
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("create collection", async () => {
+    const tx = await program.methods
+      .createCollection("NFT Collection", "NCT", "https://example.com")
+      .accounts({
+        mint: collectionMint.publicKey,
+      })
+      .signers([collectionMint])
       .rpc();
     console.log("Your transaction signature", tx);
   });

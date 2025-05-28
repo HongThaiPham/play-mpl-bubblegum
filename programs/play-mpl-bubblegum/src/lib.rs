@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 
 pub use constants::*;
 pub use instructions::*;
-pub use state::*;
+// pub use state::*;
 pub mod utils;
 declare_id!("7xJqwFGPehY5SFzGGhW9d8V77x8Fc76XiWTyh3zWzJjG");
 
@@ -28,5 +28,14 @@ pub mod play_mpl_bubblegum {
 
     pub fn mint_nft(ctx: Context<MintNft>) -> Result<()> {
         ctx.accounts.handler()
+    }
+
+    pub fn create_collection(
+        ctx: Context<CreateCollection>,
+        name: String,
+        symbol: String,
+        uri: String,
+    ) -> Result<()> {
+        ctx.accounts.handler(name, symbol, uri)
     }
 }

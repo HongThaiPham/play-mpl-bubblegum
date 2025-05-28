@@ -30,3 +30,7 @@ yarn install
 ```
 
 ## Usage
+
+- create_tree: Create a new Merkle tree for compressed NFTs.
+- mint_nft: Mint a new compressed NFT into the tree.
+- create_collection: Create a new collection for compressed NFTs.

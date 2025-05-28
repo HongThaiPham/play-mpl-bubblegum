@@ -4,6 +4,7 @@ import * as idl from "../target/idl/play_mpl_bubblegum.json";
 import { PlayMplBubblegum } from "../target/types/play_mpl_bubblegum";
 import {
   address,
+  addSignersToTransactionMessage,
   createTransactionMessage,
   generateKeyPairSigner,
   getPublicKeyFromAddress,
@@ -31,16 +32,22 @@ const maxDepth = 3;
 const maxBufferSize = 8;
 
 (async () => {
-  const { payer, rpc, sendAndConfirmTransaction, provider, umi } =
-    await getConfig();
+  const {
+    payer,
+    rpc,
+    sendAndConfirmTransaction,
+    provider,
+    umi,
+    collectionMetadata,
+  } = await getConfig();
 
   const merkleTree = await generateKeyPairSigner();
   const merkleTreePublicKey = fromWeb3JsPublicKey(
     new web3.PublicKey(merkleTree.address)
   );
-  const treeConfigPda = findTreeConfigPda(umi, {
-    merkleTree: merkleTreePublicKey,
-  });
+  // const treeConfigPda = findTreeConfigPda(umi, {
+  //   merkleTree: merkleTreePublicKey,
+  // });
 
   const program = new Program<PlayMplBubblegum>(idl, provider);
 
@@ -166,5 +173,49 @@ const maxBufferSize = 8;
       leafIndex: 0,
     });
     console.log(`🍃 NFT Minted: ${assetId[0].toString()}`);
+  }
+
+  {
+    const collectionMint = await generateKeyPairSigner();
+
+    const createCollectionInstruction = await program.methods
+      .createCollection(
+        collectionMetadata.name,
+        collectionMetadata.symbol,
+        collectionMetadata.uri
+      )
+      .accountsPartial({
+        mint: collectionMint.address,
+      })
+      // .signers([collectionMint.keyPair])
+      .instruction();
+
+    let { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    const transactionMessage = pipe(
+      createTransactionMessage({
+        version: 0,
+      }),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) =>
+        prependTransactionMessageInstruction(
+          fromLegacyTransactionInstruction(createCollectionInstruction),
+          tx
+        ),
+      (tx) => addSignersToTransactionMessage([collectionMint], tx)
+    );
+
+    const signedTransaction = await signTransactionMessageWithSigners(
+      transactionMessage
+    );
+
+    console.info({ signature: getSignatureFromTransaction(signedTransaction) });
+
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: "confirmed",
+    });
+
+    console.log(`🏛️ Collection Minted: ${collectionMint.address}`);
   }
 })();
