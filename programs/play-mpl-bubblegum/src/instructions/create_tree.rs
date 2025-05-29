@@ -17,9 +17,11 @@ pub struct CreateTree<'info> {
         seeds::program = mpl_bubblegum_program.key()
     )]
     pub tree_config: UncheckedAccount<'info>,
-    /// CHECK: new merkle tree account will be created by mpl_bubblegum program
-    #[account(signer)]
-    pub merkle_tree: AccountInfo<'info>,
+    #[account(
+        mut,
+        owner = spl_compression_program.key(),
+    )]
+    pub merkle_tree: Signer<'info>,
     pub mpl_bubblegum_program: Program<'info, MplBubblegum>,
     pub spl_compression_program: Program<'info, SplAccountCompression>,
     pub noop_program: Program<'info, Noop>,

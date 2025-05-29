@@ -38,4 +38,8 @@ pub mod play_mpl_bubblegum {
     ) -> Result<()> {
         ctx.accounts.handler(name, uri)
     }
+
+    pub fn mint_nft_to_collection(ctx: Context<MintNftToCollection>) -> Result<()> {
+        ctx.accounts.handler()
+    }
 }

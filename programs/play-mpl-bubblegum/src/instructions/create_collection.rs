@@ -2,6 +2,8 @@ use anchor_lang::prelude::*;
 
 use crate::utils::MplCore;
 use mpl_core::instructions::{CreateCollectionV2CpiBuilder};
+use mpl_core::types::{PluginAuthorityPair, Plugin, BubblegumV2};
+
 
 #[derive(Accounts)]
 pub struct CreateCollection<'info> {
@@ -24,8 +26,14 @@ impl<'info> CreateCollection<'info> {
             .name(name)
             .uri(uri)
             .payer(&self.signer.to_account_info())
-            .update_authority(Option::None)
+            .update_authority(Option::Some(&self.signer.to_account_info()))
             .system_program(&self.system_program.to_account_info())
+            .plugins(vec![
+                PluginAuthorityPair {
+                    plugin: Plugin::BubblegumV2(BubblegumV2 {}),
+                    authority: None,
+                }
+            ])
             .invoke()?;
         Ok(())
     }

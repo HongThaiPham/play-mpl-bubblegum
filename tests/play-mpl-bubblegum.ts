@@ -3,6 +3,12 @@ import { Program, web3 } from "@coral-xyz/anchor";
 import { PlayMplBubblegum } from "../target/types/play_mpl_bubblegum";
 
 import { getMerkleTreeSize } from "@metaplex-foundation/spl-account-compression";
+import { MPL_BUBBLEGUM_PROGRAM_ID } from "@metaplex-foundation/mpl-bubblegum";
+
+const [BUBBLEGUM_SIGNER] = web3.PublicKey.findProgramAddressSync(
+  [Buffer.from("mpl_core_cpi_signer")],
+  new web3.PublicKey(MPL_BUBBLEGUM_PROGRAM_ID)
+);
 
 describe("play-mpl-bubblegum", () => {
   // Configure the client to use the local cluster.
@@ -60,7 +66,19 @@ describe("play-mpl-bubblegum", () => {
       .accounts({
         collection: collectionMint.publicKey,
       })
-      .signers([collectionMint, collectionMint])
+      .signers([collectionMint])
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  it("mint nft to collection", async () => {
+    const tx = await program.methods
+      .mintNftToCollection()
+      .accounts({
+        merkleTree: merkleTree.publicKey,
+        collection: collectionMint.publicKey,
+        mplCoreCpiSigner: BUBBLEGUM_SIGNER,
+      })
       .rpc();
     console.log("Your transaction signature", tx);
   });

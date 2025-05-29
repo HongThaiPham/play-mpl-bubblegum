@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_2022::Token2022;
-use anchor_spl::token_interface::Mint;
 
 use crate::bubblegum::types::{Creator, MetadataArgsV2, TokenStandard};
 use crate::utils::{MplBubblegum, MplCore, Noop, SplAccountCompression};
 
 use crate::bubblegum::cpi::{accounts::MintV2, mint_v2};
+use crate::MPL_CORE_CPI_SIGNER_PREFIX;
 
 #[derive(Accounts)]
 pub struct MintNftToCollection<'info> {
@@ -22,11 +22,19 @@ pub struct MintNftToCollection<'info> {
     /// CHECK: will used by mpl_bubblegum program
     #[account(mut)]
     pub merkle_tree: AccountInfo<'info>,
+    /// CHECK: will used by mpl_core program
     #[account(
-      mint::authority = payer,
-      mint::token_program = token_program,
+        mut,
+        owner = mpl_core_program.key(),
     )]
-    pub mint: InterfaceAccount<'info, Mint>,
+    pub collection: AccountInfo<'info>,
+    /// CHECK: will used by mpl_core program
+    #[account(
+        seeds = [<str as AsRef<[u8]>>::as_ref(MPL_CORE_CPI_SIGNER_PREFIX)],
+        bump,
+        seeds::program = mpl_bubblegum_program.key()
+    )]
+    pub mpl_core_cpi_signer: UncheckedAccount<'info>,
     pub mpl_bubblegum_program: Program<'info, MplBubblegum>,
     pub mpl_core_program: Program<'info, MplCore>,
     pub spl_compression_program: Program<'info, SplAccountCompression>,
@@ -37,10 +45,6 @@ pub struct MintNftToCollection<'info> {
 
 impl<'info> MintNftToCollection<'info> {
     pub fn handler(&mut self) -> Result<()> {
-        // Here you would implement the logic to mint an NFT using the mpl_bubblegum program.
-        // This is a placeholder for the actual minting logic.
-        msg!("Minting NFT to collection...");
-
         mint_v2(
             CpiContext::new(
                 self.mpl_bubblegum_program.to_account_info(),
@@ -53,19 +57,19 @@ impl<'info> MintNftToCollection<'info> {
                     merkle_tree: self.merkle_tree.to_account_info(),
                     mpl_core_program: self.mpl_core_program.to_account_info(),
                     tree_authority: self.tree_config.to_account_info(),
-                    collection_authority: Option::None,
-                    core_collection: Option::None,
+                    collection_authority: Option::Some(self.payer.to_account_info()),
+                    core_collection: Option::Some(self.collection.to_account_info()),
                     leaf_delegate: Option::None,
-                    mpl_core_cpi_signer: Option::None,
+                    mpl_core_cpi_signer: Option::Some(self.mpl_core_cpi_signer.to_account_info()),
                     tree_delegate: Option::None,
                 },
             ),
             MetadataArgsV2 {
-                name: "Nft Name".to_string(),
+                name: "Nft in Collection".to_string(),
                 symbol: "NFT".to_string(),
                 uri:"https://raw.githubusercontent.com/HongThaiPham/summer-bootcamp-anchor-token2022-stake/main/app/assets/token-info.json".to_string(),
-                collection: Option::None,
-                creators:vec![   
+                collection: Option::Some(self.collection.to_account_info().key()),
+                creators:vec![
                     Creator {
                         address: self.payer.key(),
                         verified: true,

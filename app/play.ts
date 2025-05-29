@@ -7,7 +7,6 @@ import {
   addSignersToTransactionMessage,
   createTransactionMessage,
   generateKeyPairSigner,
-  getPublicKeyFromAddress,
   getSignatureFromTransaction,
   pipe,
   prependTransactionMessageInstruction,
@@ -24,13 +23,18 @@ import { fromLegacyTransactionInstruction } from "@solana/compat";
 import {
   fetchTreeConfigFromSeeds,
   findLeafAssetIdPda,
-  findTreeConfigPda,
+  MPL_BUBBLEGUM_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-bubblegum";
 import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 const maxDepth = 3;
 const maxBufferSize = 8;
 const isPublic = true; // Set to true for public trees
+
+const [BUBBLEGUM_SIGNER] = web3.PublicKey.findProgramAddressSync(
+  [Buffer.from("mpl_core_cpi_signer")],
+  new web3.PublicKey(MPL_BUBBLEGUM_PROGRAM_ID)
+);
 
 (async () => {
   const {
@@ -44,6 +48,7 @@ const isPublic = true; // Set to true for public trees
   } = await getConfig();
 
   const merkleTree = await generateKeyPairSigner();
+  const collectionMint = await generateKeyPairSigner();
   const merkleTreePublicKey = fromWeb3JsPublicKey(
     new web3.PublicKey(merkleTree.address)
   );
@@ -97,7 +102,10 @@ const isPublic = true; // Set to true for public trees
       transactionMessage
     );
 
-    console.info({ signature: getSignatureFromTransaction(signedTransaction) });
+    console.info({
+      name: "createTree",
+      signature: getSignatureFromTransaction(signedTransaction),
+    });
 
     await sendAndConfirmTransaction(signedTransaction, {
       commitment: "confirmed",
@@ -132,12 +140,110 @@ const isPublic = true; // Set to true for public trees
       transactionMessage
     );
 
-    console.info({ signature: getSignatureFromTransaction(signedTransaction) });
+    console.info({
+      name: "mintNft",
+      signature: getSignatureFromTransaction(signedTransaction),
+    });
 
     await sendAndConfirmTransaction(signedTransaction, {
       commitment: "confirmed",
     });
 
+    const assetId = findLeafAssetIdPda(umi, {
+      merkleTree: merkleTreePublicKey,
+      leafIndex: 0,
+    });
+    console.log(`🍃 NFT Minted: ${assetId[0].toString()}`);
+  }
+
+  {
+    const createCollectionInstruction = await program.methods
+      .createCollection(collectionMetadata.name, collectionMetadata.uri)
+      .accountsPartial({
+        collection: collectionMint.address,
+      })
+      // .signers([collectionMint.keyPair])
+      .instruction();
+
+    let { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    const transactionMessage = pipe(
+      createTransactionMessage({
+        version: 0,
+      }),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) =>
+        prependTransactionMessageInstruction(
+          fromLegacyTransactionInstruction(createCollectionInstruction),
+          tx
+        ),
+      (tx) => addSignersToTransactionMessage([collectionMint], tx)
+    );
+
+    const signedTransaction = await signTransactionMessageWithSigners(
+      transactionMessage
+    );
+
+    console.info({
+      name: "createCollection",
+      signature: getSignatureFromTransaction(signedTransaction),
+    });
+
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: "confirmed",
+    });
+
+    console.log(`🏛️ Collection Minted: ${collectionMint.address}`);
+  }
+  {
+    const mintToCollectionInstruction = await program.methods
+      .mintNftToCollection()
+      .accountsPartial({
+        merkleTree: merkleTree.address,
+        collection: collectionMint.address,
+        mplCoreCpiSigner: BUBBLEGUM_SIGNER,
+      })
+      .instruction();
+
+    let { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    const transactionMessage = pipe(
+      createTransactionMessage({
+        version: 0,
+      }),
+      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
+      (tx) =>
+        prependTransactionMessageInstruction(
+          fromLegacyTransactionInstruction(mintToCollectionInstruction),
+          tx
+        )
+    );
+
+    const signedTransaction = await signTransactionMessageWithSigners(
+      transactionMessage
+    );
+
+    console.info({
+      name: "mintNftToCollection",
+      signature: getSignatureFromTransaction(signedTransaction),
+    });
+
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: "confirmed",
+    });
+
+    const assetId = findLeafAssetIdPda(umi, {
+      merkleTree: merkleTreePublicKey,
+      leafIndex: 1,
+    });
+    console.log(`🍃 NFT Minted: ${assetId[0].toString()}`);
+  }
+
+  await getTreeConfig();
+
+  async function getTreeConfig() {
     {
       let treeFound = false;
 
@@ -178,51 +284,5 @@ const isPublic = true; // Set to true for public trees
         }
       }
     }
-
-    const assetId = findLeafAssetIdPda(umi, {
-      merkleTree: merkleTreePublicKey,
-      leafIndex: 0,
-    });
-    console.log(`🍃 NFT Minted: ${assetId[0].toString()}`);
-  }
-
-  {
-    const collectionMint = await generateKeyPairSigner();
-
-    const createCollectionInstruction = await program.methods
-      .createCollection(collectionMetadata.name, collectionMetadata.uri)
-      .accountsPartial({
-        collection: collectionMint.address,
-      })
-      // .signers([collectionMint.keyPair])
-      .instruction();
-
-    let { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
-
-    const transactionMessage = pipe(
-      createTransactionMessage({
-        version: 0,
-      }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
-      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
-      (tx) =>
-        prependTransactionMessageInstruction(
-          fromLegacyTransactionInstruction(createCollectionInstruction),
-          tx
-        ),
-      (tx) => addSignersToTransactionMessage([collectionMint], tx)
-    );
-
-    const signedTransaction = await signTransactionMessageWithSigners(
-      transactionMessage
-    );
-
-    console.info({ signature: getSignatureFromTransaction(signedTransaction) });
-
-    await sendAndConfirmTransaction(signedTransaction, {
-      commitment: "confirmed",
-    });
-
-    console.log(`🏛️ Collection Minted: ${collectionMint.address}`);
   }
 })();
