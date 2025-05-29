@@ -34,9 +34,8 @@ pub mod play_mpl_bubblegum {
     pub fn create_collection(
         ctx: Context<CreateCollection>,
         name: String,
-        symbol: String,
         uri: String,
     ) -> Result<()> {
-        ctx.accounts.handler(name, symbol, uri)
+        ctx.accounts.handler(name, uri)
     }
 }

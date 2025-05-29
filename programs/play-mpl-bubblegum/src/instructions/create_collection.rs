@@ -1,70 +1,34 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::AssociatedToken,
-    token_2022::Token2022,
-    token_interface::{token_metadata_initialize, Mint, TokenAccount, TokenMetadataInitialize},
-};
 
-use crate::utils::update_account_lamports_to_minimum_balance;
+use crate::utils::MplCore;
+use mpl_core::instructions::{CreateCollectionV2CpiBuilder};
 
 #[derive(Accounts)]
 pub struct CreateCollection<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
+    /// CHECK: Collection account will be use in mpl_core program
     #[account(
-        init,
-        signer,
-        payer = signer,
-        mint::token_program = token_program,
-        mint::decimals = 0,
-        mint::authority = signer,
-        mint::freeze_authority = signer,
-        extensions::metadata_pointer::authority = signer,
-        extensions::metadata_pointer::metadata_address = mint,
+        mut, 
+        constraint = collection.data_is_empty() == true,
     )]
-    pub mint: InterfaceAccount<'info, Mint>,
-    #[account(
-        init,
-        payer = signer,
-        associated_token::token_program = token_program,
-        associated_token::mint = mint,
-        associated_token::authority = signer,
-    )]
-    pub token_account: InterfaceAccount<'info, TokenAccount>,
+    pub collection: Signer<'info>,
     pub system_program: Program<'info, System>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Program<'info, Token2022>,
+    pub mpl_core_program: Program<'info, MplCore>,
 }
 
 impl<'info> CreateCollection<'info> {
-    pub fn handler(&mut self, name: String, symbol: String, uri: String) -> Result<()> {
-        self.initialize_token_metadata(name, symbol, uri)?;
-
-        self.mint.reload()?;
-
-        update_account_lamports_to_minimum_balance(
-            self.mint.to_account_info(),
-            self.signer.to_account_info(),
-            self.system_program.to_account_info(),
-        )?;
-
+    pub fn handler(&mut self, name: String,  uri: String) -> Result<()> {
+        CreateCollectionV2CpiBuilder::new(&self.mpl_core_program.to_account_info())
+            .collection(&self.collection.to_account_info())
+            .name(name)
+            .uri(uri)
+            .payer(&self.signer.to_account_info())
+            .update_authority(Option::None)
+            .system_program(&self.system_program.to_account_info())
+            .invoke()?;
         Ok(())
     }
 
-    fn initialize_token_metadata(&self, name: String, symbol: String, uri: String) -> Result<()> {
-        let cpi_accounts = TokenMetadataInitialize {
-            program_id: self.token_program.to_account_info(),
-            mint: self.mint.to_account_info(),
-            metadata: self.mint.to_account_info(), // metadata account is the mint, since data is stored in mint
-            mint_authority: self.signer.to_account_info(),
-            update_authority: self.signer.to_account_info(),
-        };
-        token_metadata_initialize(
-            CpiContext::new(self.token_program.to_account_info(), cpi_accounts),
-            name,
-            symbol,
-            uri,
-        )?;
-        Ok(())
-    }
+ 
 }

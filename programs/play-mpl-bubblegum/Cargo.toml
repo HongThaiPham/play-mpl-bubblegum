@@ -26,3 +26,4 @@ anchor-lang = { version = "0.31.1", features = [
 ] }
 anchor-spl = { version = "0.31.1" }
 spl-type-length-value = "0.7.0"
+mpl-core = { version = "0.10.0" }

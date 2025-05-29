@@ -56,11 +56,11 @@ describe("play-mpl-bubblegum", () => {
 
   it("create collection", async () => {
     const tx = await program.methods
-      .createCollection("NFT Collection", "NCT", "https://example.com")
+      .createCollection("NFT Collection", "https://example.com")
       .accounts({
-        mint: collectionMint.publicKey,
+        collection: collectionMint.publicKey,
       })
-      .signers([collectionMint])
+      .signers([collectionMint, collectionMint])
       .rpc();
     console.log("Your transaction signature", tx);
   });

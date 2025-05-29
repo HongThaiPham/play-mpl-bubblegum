@@ -190,13 +190,9 @@ const isPublic = true; // Set to true for public trees
     const collectionMint = await generateKeyPairSigner();
 
     const createCollectionInstruction = await program.methods
-      .createCollection(
-        collectionMetadata.name,
-        collectionMetadata.symbol,
-        collectionMetadata.uri
-      )
+      .createCollection(collectionMetadata.name, collectionMetadata.uri)
       .accountsPartial({
-        mint: collectionMint.address,
+        collection: collectionMint.address,
       })
       // .signers([collectionMint.keyPair])
       .instruction();
