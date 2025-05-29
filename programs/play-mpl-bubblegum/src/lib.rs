@@ -22,8 +22,9 @@ pub mod play_mpl_bubblegum {
         ctx: Context<CreateTree>,
         max_depth: u32,
         max_buffer_size: u32,
+        is_public: bool,
     ) -> Result<()> {
-        ctx.accounts.handler(max_depth, max_buffer_size)
+        ctx.accounts.handler(max_depth, max_buffer_size, is_public)
     }
 
     pub fn mint_nft(ctx: Context<MintNft>) -> Result<()> {

@@ -1,4 +1,6 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token_2022::Token2022;
+use anchor_spl::token_interface::Mint;
 
 use crate::bubblegum::types::{Creator, MetadataArgsV2, TokenStandard};
 use crate::utils::{MplBubblegum, MplCore, Noop, SplAccountCompression};
@@ -6,7 +8,7 @@ use crate::utils::{MplBubblegum, MplCore, Noop, SplAccountCompression};
 use crate::bubblegum::cpi::{accounts::MintV2, mint_v2};
 
 #[derive(Accounts)]
-pub struct MintNft<'info> {
+pub struct MintNftToCollection<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
     /// CHECK: will used by mpl_bubblegum program
@@ -17,21 +19,27 @@ pub struct MintNft<'info> {
         seeds::program = mpl_bubblegum_program.key()
     )]
     pub tree_config: UncheckedAccount<'info>,
-    /// CHECK: new merkle tree account will be created by mpl_bubblegum program
+    /// CHECK: will used by mpl_bubblegum program
     #[account(mut)]
     pub merkle_tree: AccountInfo<'info>,
+    #[account(
+      mint::authority = payer,
+      mint::token_program = token_program,
+    )]
+    pub mint: InterfaceAccount<'info, Mint>,
     pub mpl_bubblegum_program: Program<'info, MplBubblegum>,
     pub mpl_core_program: Program<'info, MplCore>,
     pub spl_compression_program: Program<'info, SplAccountCompression>,
     pub noop_program: Program<'info, Noop>,
+    pub token_program: Program<'info, Token2022>,
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> MintNft<'info> {
+impl<'info> MintNftToCollection<'info> {
     pub fn handler(&mut self) -> Result<()> {
         // Here you would implement the logic to mint an NFT using the mpl_bubblegum program.
         // This is a placeholder for the actual minting logic.
-        msg!("Minting NFT...");
+        msg!("Minting NFT to collection...");
 
         mint_v2(
             CpiContext::new(
@@ -57,13 +65,12 @@ impl<'info> MintNft<'info> {
                 symbol: "NFT".to_string(),
                 uri:"https://raw.githubusercontent.com/HongThaiPham/summer-bootcamp-anchor-token2022-stake/main/app/assets/token-info.json".to_string(),
                 collection: Option::None,
-                creators:vec![
-                 
-                Creator {
-                    address: self.payer.key(),
-                    verified: true,
-                    share: 100,
-                }
+                creators:vec![   
+                    Creator {
+                        address: self.payer.key(),
+                        verified: true,
+                        share: 100,
+                    }
                 ],
                 is_mutable:true,
                 primary_sale_happened:false,

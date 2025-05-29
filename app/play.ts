@@ -30,6 +30,7 @@ import { fromWeb3JsPublicKey } from "@metaplex-foundation/umi-web3js-adapters";
 
 const maxDepth = 3;
 const maxBufferSize = 8;
+const isPublic = true; // Set to true for public trees
 
 (async () => {
   const {
@@ -39,6 +40,7 @@ const maxBufferSize = 8;
     provider,
     umi,
     collectionMetadata,
+    user1,
   } = await getConfig();
 
   const merkleTree = await generateKeyPairSigner();
@@ -65,7 +67,7 @@ const maxBufferSize = 8;
     });
 
     const createTreeInstruction = await program.methods
-      .createTree(maxDepth, maxBufferSize)
+      .createTree(maxDepth, maxBufferSize, isPublic)
       .accountsPartial({
         merkleTree: merkleTree.address,
         noopProgram: address("mnoopTCrg4p8ry25e4bcWA9XZjbNjMTfgYVGGEdRsf3"),
@@ -116,13 +118,14 @@ const maxBufferSize = 8;
       createTransactionMessage({
         version: 0,
       }),
-      (tx) => setTransactionMessageFeePayerSigner(payer, tx),
+      (tx) => setTransactionMessageFeePayerSigner(user1, tx),
       (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx),
       (tx) =>
         prependTransactionMessageInstruction(
           fromLegacyTransactionInstruction(mintInstruction),
           tx
-        )
+        ),
+      (tx) => addSignersToTransactionMessage([payer], tx)
     );
 
     const signedTransaction = await signTransactionMessageWithSigners(
@@ -160,6 +163,14 @@ const maxBufferSize = 8;
           console.log(`     - Is Public: ${treeConfig.isPublic}`);
           console.log(
             `     - Is Decompressible: ${treeConfig.isDecompressible}`
+          );
+          console.log(`     - Leaf Schema version : ${treeConfig.version}`);
+          console.log(
+            `     - Tree creator: ${JSON.stringify(
+              treeConfig.treeCreator.toString(),
+              null,
+              2
+            )}`
           );
         } catch {
           // If not found yet, wait and retry

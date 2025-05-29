@@ -33,7 +33,7 @@ export async function getConfig() {
     new Uint8Array(
       JSON.parse(
         require("fs").readFileSync(
-          "./test-wallet/MTWGugyrtQj6C3ZsPxECTNjiSk4FdaA8bnGbcigjRSQ.json"
+          "./test-wallet/Cns1AfgvwRHPwWqEZkfwJncJs7Y3emhuygGexQofpsNv.json"
         )
       )
     )
@@ -43,7 +43,7 @@ export async function getConfig() {
     new Uint8Array(
       JSON.parse(
         require("fs").readFileSync(
-          "./test-wallet/Cns1AfgvwRHPwWqEZkfwJncJs7Y3emhuygGexQofpsNv.json"
+          "./test-wallet/MTWGugyrtQj6C3ZsPxECTNjiSk4FdaA8bnGbcigjRSQ.json"
         )
       )
     )

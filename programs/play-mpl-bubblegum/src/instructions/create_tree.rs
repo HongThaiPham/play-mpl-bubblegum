@@ -17,7 +17,7 @@ pub struct CreateTree<'info> {
         seeds::program = mpl_bubblegum_program.key()
     )]
     pub tree_config: UncheckedAccount<'info>,
-    /// CHECK: Zero initialized account
+    /// CHECK: new merkle tree account will be created by mpl_bubblegum program
     #[account(signer)]
     pub merkle_tree: AccountInfo<'info>,
     pub mpl_bubblegum_program: Program<'info, MplBubblegum>,
@@ -27,12 +27,7 @@ pub struct CreateTree<'info> {
 }
 
 impl<'info> CreateTree<'info> {
-    pub fn handler(&mut self, max_depth: u32, max_buffer_size: u32) -> Result<()> {
-        self.create_tree(max_depth, max_buffer_size)?;
-        Ok(())
-    }
-
-    fn create_tree(&self, max_depth: u32, max_buffer_size: u32) -> Result<()> {
+    pub fn handler(&mut self, max_depth: u32, max_buffer_size: u32, is_public: bool) -> Result<()> {
         create_tree_v2(
             CpiContext::new(
                 self.mpl_bubblegum_program.to_account_info(),
@@ -43,12 +38,12 @@ impl<'info> CreateTree<'info> {
                     compression_program: self.spl_compression_program.to_account_info(),
                     log_wrapper: self.noop_program.to_account_info(),
                     tree_authority: self.tree_config.to_account_info(),
-                    tree_creator: Option::None,
+                    tree_creator: Option::None, // default is caller
                 },
             ),
             max_depth,
             max_buffer_size,
-            Option::Some(true),
+            Option::Some(is_public),
         )?;
 
         Ok(())

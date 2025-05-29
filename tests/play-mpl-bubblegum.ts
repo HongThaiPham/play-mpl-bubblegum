@@ -14,6 +14,7 @@ describe("play-mpl-bubblegum", () => {
 
   const maxDepth = 3;
   const maxBufferSize = 8;
+  const isPublic = true; // Set to true for public trees
   const merkleTree = web3.Keypair.generate();
   const collectionMint = web3.Keypair.generate();
 
@@ -33,7 +34,7 @@ describe("play-mpl-bubblegum", () => {
     });
     // Add your test here.
     const tx = await program.methods
-      .createTree(maxDepth, maxBufferSize)
+      .createTree(maxDepth, maxBufferSize, isPublic)
       .accountsPartial({
         merkleTree: merkleTree.publicKey,
       })
